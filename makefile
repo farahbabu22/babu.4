@@ -10,4 +10,4 @@ user: user.c oss.h
 	$(CC) $(CFLAGS) user.c -o user
 
 clean:
-	rm -f oss user *.log
+	rm -rf oss user *.log *.dSYM
