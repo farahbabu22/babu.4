@@ -12,139 +12,165 @@
 
 static int sid = -1, qid = -1;
 
-static struct shmem * oss_create_shm(){
-	struct shmem *shm = NULL;
-
-	key_t key = ftok(keyPath, kSHM);
-	if(key == -1){
-		perror("ftok");
-		return NULL;
-	}
-
-	sid = shmget(key, sizeof(struct shmem), 0);
-	if(sid == -1){
-		perror("shmget");
-		return NULL;
-	}
-
-	shm = (struct shmem*) shmat(sid, NULL, 0);
-  if(shm == (void*)-1){
-    perror("shmat");
-    return NULL;
-  }
-
-	key = ftok(keyPath, kQUEUE);
-	if(key == -1){
-		perror("ftok");
-		return NULL;
-	}
-
-	qid = msgget(key, 0);
-	if(qid == -1){
-		perror("mget");
-		return NULL;
-	}
-
-  return shm;
-}
-
-static int oss_destroy_shm(struct shmem * shm){
-	if(shmdt(shm) == -1){
-		perror("shmdt");
+static int schedulerDestroySHM(struct shmem *shm)
+{
+	if (shmdt(shm) == -1)
+	{
+		perror("USER: Issue with shmdt");
 		return -1;
 	}
 	return 0;
 }
 
-static int oss_user_simulation(const int io_bound){
 
-  int alive = 1;
 
-	//probability process will block for IO, depends on process type
+static struct shmem *schedulerCreateSHM()
+{
+	struct shmem *shm = NULL;
+
+	key_t key = ftok(keyPath, kSHM);
+	if (key == -1)
+	{
+		perror("USER: Issue with ftok");
+		return NULL;
+	}
+
+	sid = shmget(key, sizeof(struct shmem), 0);
+	if (sid == -1)
+	{
+		perror("USER: Issue with shmget");
+		return NULL;
+	}
+
+	shm = (struct shmem *)shmat(sid, NULL, 0);
+	if (shm == (void *)-1)
+	{
+		perror("USER: Issue with shmat");
+		return NULL;
+	}
+
+	key = ftok(keyPath, kQUEUE);
+	if (key == -1)
+	{
+		perror("USER: Issue ftok kQUEUE");
+		return NULL;
+	}
+
+	qid = msgget(key, 0);
+	if (qid == -1)
+	{
+		perror("USER: Issue with mget");
+		return NULL;
+	}
+
+	return shm;
+}
+
+
+
+/*
+* Wait for timeslice and receive message and process it
+*/
+static int schedulerUserSimulate(const int io_bound)
+{
+
+	int alive = 1;
+
 	const int io_block_prob = (io_bound) ? IO_IO_BLOCK_PROB : CPU_IO_BLOCK_PROB;
 
-  while(alive){
+	while (alive)
+	{
 
 		struct ossMsg m;
 
-		//wait for a timeslice
+
 		m.from = getpid();
-		if(msgrcv(qid, (void*)&m, MESSAGE_SIZE, m.from, 0) == -1){
+		if (msgrcv(qid, (void *)&m, MESSAGE_SIZE, m.from, 0) == -1)
+		{
 			perror("mrcv");
 			break;
 		}
 
 		const int timeslice = m.timeslice;
-		if(timeslice == 0){	//if its time to quit
+		if (timeslice == 0)
+		{ 
 			break;
 		}
 
 		bzero(&m, sizeof(struct ossMsg));
 
-		const int will_terminate = ((rand() % 100) < TERM_PROB) ? 1 : 0;
+		const int willTerminate = ((rand() % 100) < TERM_PROB) ? 1 : 0;
 
-		if(will_terminate){
+		if (willTerminate) // terminated successfully
+		{
 			m.timeslice = sTERMINATED;
-			//use some part of the timeslice
+
 			m.clock.tv_nsec = rand() % timeslice;
 
 			alive = 0;
+		}
+		else
+		{ 
 
-		}else{	//it won't terminate
 
-			//decide to use entire timeslice or block on event
 			const int will_interrupt = ((rand() % 100) < io_block_prob) ? 1 : 0;
 
-			if(will_interrupt){
-				m.timeslice = sBLOCKED;	//tell OSS we are waiting for the event
+			if (will_interrupt)
+			{
+				m.timeslice = sBLOCKED; //Set as blocked
 
-				//amount of timeslice used, before being blocked
+				
 				m.clock.tv_nsec = rand() % timeslice;
 
-				//tell OSS, when event will happen
+				
 				m.io.tv_sec = rand() % EVENT_R;
 				m.io.tv_nsec = rand() % EVENT_S;
-
-			}else{	//use entire timeslice
+			}
+			else
+			{ 
 				m.timeslice = sREADY;
 				m.clock.tv_nsec = timeslice;
 			}
-
 		}
 
-		//inform oss what we choose to do
+		
 		m.mtype = getppid();
 		m.from = getpid();
-		if(msgsnd(qid, (void*)&m, MESSAGE_SIZE, 0) == -1){
-			perror("msnd");
+		if (msgsnd(qid, (void *)&m, MESSAGE_SIZE, 0) == -1)
+		{
+			perror("USER: error with msnd");
 			break;
 		}
-  }
+	}
 
 	return 0;
 }
 
-int main(const int argc, char * const argv[]){
+int main(const int argc, char *const argv[])
+{
 
-	if(argc != 2){
-		fprintf(stderr, "Usage: ./user [IO_BOUND=0|1]\n");
+	if (argc != 2)
+	{
+		fprintf(stderr, "USER: Please supply arguments like ./user [IO_BOUND=0|1]\n");
 		return EXIT_FAILURE;
 	}
 
-	const int io_bound = atoi(argv[1]);	//1 if true
+	const int ioBound = atoi(argv[1]); //1 if true
 
-	srand(getpid() + io_bound);
+	srand(getpid() + ioBound);
 
-	struct shmem *shm = oss_create_shm();
-  if(shm == NULL){
-    return EXIT_FAILURE;
-	}
-
-  oss_user_simulation(io_bound);
-
-  if(oss_destroy_shm(shm) == -1){
+	struct shmem *shm = schedulerCreateSHM();
+	if (shm == NULL)
+	{
 		return EXIT_FAILURE;
 	}
 
-  return EXIT_SUCCESS;
+	schedulerUserSimulate(ioBound);
+
+	if (schedulerDestroySHM(shm) == -1)
+	{
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

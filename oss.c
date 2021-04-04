@@ -612,6 +612,7 @@ static void printResults()
   printf("***\t\tBlocked processes: %u\n", usersBlocked);
   printf("***\t\tStarted processes: %u\n", usersStarted);
   printf("***\t\tTerminated processes: %u\n", usersTerminated);
+  printf("*********************************PROGRAM COMPLETED SUCCESSFULLY**********************************************\n");
 }
 
 static void destorySchedulerSHM()
