@@ -11,6 +11,12 @@
 #include <errno.h>
 #include "oss.h"
 
+/*
+* Author: Farah Babu
+* SSO ID: FBKZX
+* email id: fbkzx@umsystem.edu
+*/
+
 #define LOG_LINES 10000
 
 #define IO_BOUND_PROB 30 //Set 30% as i/o bound processes

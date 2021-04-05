@@ -10,6 +10,12 @@
 #include "oss.h"
 #include "user.h"
 
+/*
+* Author: Farah Babu
+* SSO ID: FBKZX
+* email id: fbkzx@umsystem.edu
+*/
+
 static int sid = -1, qid = -1;
 
 static int schedulerDestroySHM(struct shmem *shm)

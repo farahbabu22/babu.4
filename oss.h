@@ -1,6 +1,12 @@
 #ifndef OSS_H
 #define OSS_H
 
+/*
+* Author: Farah Babu
+* SSO ID: FBKZX
+* email id: fbkzx@umsystem.edu
+*/
+
 //Limiting the program to total 20 processes so 20 - (oss + user) = 18 processes
 #define processSize 18
 

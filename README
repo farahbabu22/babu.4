@@ -1,1 +1,83 @@
-# babu.4
+# Assignment 4 - Process Scheduling (Simulation of Operating System Scheduler)
+
+To understand how the processes are scheduled in operating how they are timesliced to support proper interactivity. How the process move between the states
+1. NEW
+2. READY
+3. BLOCKED
+4. TERMINATED
+
+
+### Assignment details
+* Author: Farah Babu
+* SSO ID: FBKZX
+* email id: fbkzx@umsystem.edu
+
+### Files delivered
+babu.4
+├─ README
+├─ makefile
+├─ oss.c
+├─ oss.h
+├─ user.c
+└─ user.h
+
+### Design of the assignment
+
+#### oss.h
+* To set all the enum states for messages, queues
+
+
+#### oss.c
+* This program is helpful in simulating how an operating system scheduler works
+* This program will ensure that only one program is in execution unlike the other programs where multiple processes were running.
+* This is simulating the concept of a uniprocessor
+* Message communication is used to change the state of the processes (BLOCKED, READY, NEW, TERMINATED)
+* Bit vector are created to keep track of the process control blocks for each and ever process
+* The program makes use of timespec to keep track of how long it takes to run and calculate various running times
+* The various unix / system apis used in this program are
+- getopt - parse command-line arguments
+- ftok - generate key for semaphores and shared memory
+- shmget - initialize shared memory
+- shmat - to attach shared memory
+- msgget - to get an identifier to aid in message communication
+- msgsnd - to send message to the send messages using the id acquired in msgget
+- fork - to fork child processes
+- execl - to execute a system command
+- signal - for signal handling like SIGINT / SIGKILL / SIGALRM
+- shmdt - to remove the shared memory
+- alarm - for a timeout limit
+- perror - print error to the console
+
+
+
+#### user.h
+* define the user blocking time constants 
+* define constants for probablity of time blocking
+
+
+#### user.c
+* This program is invoked or spawend off from the oss.c program
+* This program purpose is wait for a message to be received
+* when its received it will take up the CPU to run 
+* until an event to block it is received
+* Random function is used to compute whether it will i/o bound process or CPU bound process
+- ftok - generate key for semaphores and shared memory
+- shmget - initialize shared memory
+- shmat - to attach shared memory
+- msgget - to get an identifier to aid in message communication
+- msgrcv - to get message using the id acquired through msgget
+- shmdt - to remove the shared memory
+
+### Execution
+Clean the entire project using the below command
+> make clean
+
+make the project
+> make
+
+run the project
+For help
+> ./oss -h
+
+With all options
+> ./oss -s 100 -l output.log
