@@ -81,3 +81,7 @@ For help
 
 With all options
 > ./oss -s 100 -l output.log
+
+> ./oss -s <time> -l <log file name>
+
+
